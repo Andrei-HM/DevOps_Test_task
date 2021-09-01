@@ -1,0 +1,26 @@
+# Подключаемся к репозиторию zabbix для Debian
+wget https://repo.zabbix.com/zabbix/5.0/debian/pool/main/z/zabbix-release/zabbix-release_5.0-1+buster_all.deb
+dpkg -i zabbix-release_5.0-1+buster_all.deb
+# После подключения устанавливаем ПО
+apt-get update && apt-get install zabbix-server-mysql zabbix-frontend-php php-fpm
+#Cоздадим базу данных, пользователя zabbix, и заполним базу.
+mysql -uroot -p
+Enter password:
+    > create database zabbix character set utf8 collate utf8_bin;
+    > grant all privileges on zabbix.* to zabbix@localhost identified by 'zabpassword';
+    > exit 
+# на хосте Zabbix сервера импортируем начальную схему и данные
+zcat /usr/share/doc/zabbix-server-mysql/create.sql.gz | mysql -uzabbix -p zabbix
+# Настроим zabbix редактирую файл конфига
+nano /etc/zabbix/zabbix_server.conf
+DBHost=localhost
+DBName=zabbix
+DBUser=zabbix
+DBPassword=zabpassword
+ListenIP=0.0.0.0 # все ip слушать
+# запускаем zabbix и добавляем в автозагрузку.
+sudo systemctl start zabbix-server
+sudo systemctl enable zabbix-server
+# проверяем работу, через браузер http://test-site.com/zabbix откроется окно zabbix, 
+настраиваем мониторинг в разделе "мониторинг" и настраиваем то что будем мониторить
+"настроика узла" DB 192.168.100.5 и zabbix хост 192.168.100.3
