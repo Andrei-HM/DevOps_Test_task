@@ -1,0 +1,11 @@
+# Загрузим готовый образ из репозитория себе на docker host
+docker pull mysql
+# запустим скаченый образ, контейнер назовем testmysql
+docker run --name=testmysql -d mysql/mysql-server:latest 
+# проверяем запущен или нет контейнер
+docker ps
+# при установке образа mysql был с генерирован пароль, посмотрим пароль 
+docker logs testmysql
+# вход в контейнер с оболочкой bash
+docker exec -it mysql bash
+
