@@ -1,0 +1,66 @@
+#Дистрибутив - Debian 11 (на двух виртуальных машинах)
+#1 ВМ - 192.168.100.3 (как хост для Zabbix, СМS)
+#2 ВМ - 192.168.100.5 (DB)
+
+apt-get install sudo # устанавливаем покет sudo, дает права суперпользователя
+
+#Для настроики работы CMS не обходима установить ПО (php, apache2)
+sudo apt-get update && sudo apt-get install apache2 php php-mysql libapache2-mod-php php-mbstring php-zip php-gd default-mysql-server
+# проверяем что apache2 запущен и ткрывается по 80 порту (он работает на 80 порту)
+lsof -i:80
+# настроим IP на хосте (не виртуалка ), привяжем "сайт" к IP
+C:\Windows\System32\drivers\etc\hosts
+# Используя блокнот под "администратором" записываем наш IP
+192.168.100.3 test-site.com
+# так же меняем и на виртуальном хосте
+nano /etc/hosts
+127.0.0.1 test-site.com
+#создаем рабочую директорию для test-site
+mkdir /var/www/test-site/
+# Добавляем себя (andrew) в группу www-data( по умолчанию конфигурация владельца файла) и переопределяем права
+sudo usermod -g www-data andrew
+sudo chown -R andrew:www-data /var/www/test-site/
+# создаем файл конфига (test-site.conf) ср -копирование 
+sudo cp /etc/apache2/sites-available/000-default.conf /etc/apache2/sites-available/test-site.conf
+ServerName test-site.com
+DocumentRoot /var/www/test-site/
+#создаем симлинк ( указывает на фактическое расположение файла, ярлык)
+ln -s /etc/apache2/sites-available/test-site.conf /etc/apache2/sites-enabled/
+# перезагружаем apache2
+sudo service apache2 restart
+# проверяем работу php, создадим простой файл для php
+nano /var/www/test-site/index.php
+<?php phpinfo() ?>
+# В браузере http://test-site.com мы видим страницу php = все работает
+# Настраиваем базу данных mysql
+# Залогинимся в mysql
+sudo mysql -u root -p
+# создадим новую базу данных
+CREATE DATABASE testDB;
+# создадим пользователя и дадим ему доступ к этой базе данных
+CREATE USER 'testuserDB'@'192.168.100.5' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON testDB.* TO 'testuserBD'@'192.168.100.5';
+# добавим таблицу
+USE testDB;
+CREATE TABLE testtable (
+id INT NOT NULL AUTO_INCREMENT,
+str VARCHAR(100) NOT NULL,
+PRIMARY KEY(id)
+);
+# добавим одну запись в только что созданную таблицу
+INSERT INTO testtable (str) VALUES ('test1'), ('test2'), ('test3');
+# Скрипт для проверки работы mysql
+nano /var/www/test-site/testmysql.php
+<?php
+$connection = mysqli_connect("192.168.100.5","testuserDB","password","testDB") or die("Error " . mysqli_error($connection));
+$sql = "SELECT id, str FROM testtable";
+$result = mysqli_query($connection, $sql) or die("Error " . mysqli_error($connection));
+$items = array();
+while($row = mysqli_fetch_assoc($result))
+{
+$items[] = $row;
+}
+echo json_encode($items);
+?>
+# Проверим работу скрипта: http://test-site.com/testmysql.php
+
