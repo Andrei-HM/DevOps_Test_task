@@ -1,0 +1,23 @@
+# Обновим систему
+apt-get update -y
+# установим веб-сервис Nginx and php и другие расширения php необходимые ждя работы
+apt-get install nginx php php-fpm php-curl php-gd php-opcache php-json php-mbstring php-intl php-imagick php-xml -y
+# для работы nginx удалим apache2 он так же установился с выше указоной командой 
+sudo service apache2 stop
+apt-get remove apache2 --purge
+#после удаление apache2 запускаем службы Nginx and php-fpm
+sudo service nginx start
+sudo service php7.4-fpm
+# Переходим в рабочую директорию и загружаем dokuwiki
+cd /var/www/html
+wget https://download.dokuwiki.org/src/dokuwiki/dokuwiki-stable.tgz
+# после загрузки необходимых покетов распакуем их их архива
+tar -xvzf dokuwiki-stable.tgz
+# Задаем разрешение  и права доступа к файлам и папкам 
+chown -R www-data: www-data / var / www / html / dokuwiki 
+chmod -R 755 / var / www / html / dokuwiki
+# настраиваем nginx файл конфига
+nano /etc/nginx/sites-available/dokuwiki.conf
+
+
+
